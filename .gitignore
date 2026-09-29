@@ -1,0 +1,9 @@
+.DS_Store
+*.app
+*.zip
+*.log
+processed/
+__pycache__/
+*.pyc
+.swiftpm/
+.build/
