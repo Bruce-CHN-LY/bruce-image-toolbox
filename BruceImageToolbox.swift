@@ -20,26 +20,69 @@ private enum DependencyLocator {
         "magick": ["/opt/homebrew/bin/magick", "/usr/local/bin/magick"],
         "pngquant": ["/opt/homebrew/bin/pngquant", "/usr/local/bin/pngquant"],
         "python3": [
-            "/usr/bin/python3",
             "/opt/homebrew/bin/python3",
             "/usr/local/bin/python3",
             "/Library/Frameworks/Python.framework/Versions/Current/bin/python3",
-            "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
+            "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3",
+            "/usr/bin/python3"
         ]
     ]
 
     static func executable(named name: String) -> URL? {
-        candidates[name]?
+        let matches = candidates[name]?
             .map { URL(fileURLWithPath: $0) }
-            .first { FileManager.default.isExecutableFile(atPath: $0.path) }
+            .filter { FileManager.default.isExecutableFile(atPath: $0.path) }
+
+        if name == "python3" {
+            return matches?.first { supportedPythonVersion(at: $0) != nil }
+        }
+        return matches?.first
+    }
+
+    private static func supportedPythonVersion(at executable: URL) -> String? {
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = executable
+        process.arguments = [
+            "-c",
+            "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
+        ]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+
+        guard process.terminationStatus == 0,
+              let text = String(
+                  data: output.fileHandleForReading.readDataToEndOfFile(),
+                  encoding: .utf8
+              )?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            return nil
+        }
+
+        let components = text.split(separator: ".").compactMap { Int($0) }
+        guard components.count >= 2,
+              components[0] > 3 || (components[0] == 3 && components[1] >= 10) else {
+            return nil
+        }
+        return text
     }
 
     static func statusSummary() -> String {
         let names = ["cwebp", "magick", "pngquant", "python3"]
         let ready = names.filter { executable(named: $0) != nil }
         return ready.count == names.count
-            ? "运行环境已就绪：WebP、压缩与本地清理依赖均可用"
-            : "部分依赖未安装：\(names.filter { executable(named: $0) == nil }.joined(separator: "、"))"
+            ? "运行环境已就绪：WebP、压缩与 Python 3.10+ 均可用"
+            : "部分依赖未安装或版本过低：\(names.filter { executable(named: $0) == nil }.joined(separator: "、"))"
     }
 }
 
@@ -315,7 +358,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         guard let python = DependencyLocator.executable(named: "python3") else {
-            showError("没有找到 Python 3，无法启动本地清理页面。")
+            showError("没有找到 Python 3.10 或更高版本，无法启动本地清理页面。请在终端运行：\nbrew install python")
             return
         }
 

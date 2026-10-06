@@ -118,6 +118,22 @@ watermarks-remover-tool/
 
 ## Quick Start / 快速开始
 
+### Requirements / 运行要求
+
+- Python **3.10 or newer** / Python **3.10 或更高版本**
+- macOS users: the system `/usr/bin/python3` may be Python 3.9 and is not supported. Install a current Python with Homebrew: / macOS 自带的 `/usr/bin/python3` 可能是 3.9，不受支持，请安装新版 Python：
+
+```bash
+brew install python
+python3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 10)'
+```
+
+Optional PDF metadata tools / 可选 PDF 元数据工具：
+
+```bash
+brew install exiftool qpdf
+```
+
 ### macOS
 
 ```bash

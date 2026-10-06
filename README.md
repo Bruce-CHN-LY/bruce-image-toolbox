@@ -27,18 +27,45 @@ Bruce Image Toolbox is a local-first macOS utility that brings common image-proc
 | 版权信息写入 | 写入 Creator、Rights、Description、Credit、Copyright 等元数据 | 支持安全替换或输出副本 |
 | 水印与溯源元数据清理 | 本地检查并清理授权文件中的常见 AI 标识、EXIF、XMP 与文档属性 | 本地网页处理，可批量下载结果 |
 
-## 系统要求
+## 安装前必读：系统与依赖
+
+运行已经构建好的 App 需要：
 
 - macOS 13 或更高版本
-- Xcode Command Line Tools / Swift 编译器
 - [Homebrew](https://brew.sh/)
-- 以下本地依赖：
+- Python **3.10 或更高版本**（macOS 自带的 Python 3.9 不满足要求）
+- WebP、ImageMagick 和 pngquant
+
+首次使用前，请在“终端”中一次性安装全部必需依赖：
 
 ```bash
-brew install webp imagemagick pngquant
+brew install webp imagemagick pngquant python
 ```
 
-水印与溯源元数据模块使用 macOS 自带或本机已安装的 Python 3，仅在 `127.0.0.1` 启动本地服务。
+安装后可以运行以下命令检查环境：
+
+```bash
+python3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 10)'
+cwebp -version
+magick -version
+pngquant --version
+```
+
+水印与溯源元数据模块只在 `127.0.0.1` 启动本地服务。工具会自动寻找 Homebrew 或 Python.org 安装的 Python 3.10+，并拒绝使用不兼容的系统 Python 3.9。
+
+如需更完整地清理 PDF 元数据，可额外安装以下可选依赖：
+
+```bash
+brew install exiftool qpdf
+```
+
+`c2patool` 仅用于更深入的 C2PA 检查，属于可选组件；安装方式请参考 [c2pa-rs 官方项目](https://github.com/contentauth/c2pa-rs/tree/main/cli)。
+
+如果需要从源码构建，还需要先安装 Xcode Command Line Tools：
+
+```bash
+xcode-select --install
+```
 
 ## 构建
 
@@ -66,6 +93,12 @@ Bruce 图片工具箱.app
 3. 按各模块提示拖入图片或选择文件夹。
 4. 第一次打开未经 Apple 公证的本地构建时，可在 Finder 中右键应用并选择“打开”。
 
+如果首页提示缺少依赖，请先执行：
+
+```bash
+brew install webp imagemagick pngquant python
+```
+
 水印与溯源元数据模块第一次启动时会复制到：
 
 ```text
@@ -73,6 +106,16 @@ Bruce 图片工具箱.app
 ```
 
 这样运行时产生的临时文件不会修改已签名的应用包。
+
+### Python 版本报错
+
+如果看到下面的错误：
+
+```text
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+```
+
+说明程序调用了 Python 3.9 或更早版本。请运行 `brew install python`，完全退出工具箱后重新打开。新版启动器会自动选择 Python 3.10+。
 
 ## 项目结构
 
