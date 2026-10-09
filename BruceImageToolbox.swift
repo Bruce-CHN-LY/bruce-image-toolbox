@@ -87,6 +87,10 @@ private enum DependencyLocator {
 }
 
 private final class ToolCardView: NSBox {
+    private let titleLabel = NSTextField(labelWithString: "")
+    private let descriptionLabel = NSTextField(wrappingLabelWithString: "")
+    private let actionButton: NSButton
+
     init(
         title: String,
         description: String,
@@ -95,10 +99,9 @@ private final class ToolCardView: NSBox {
         target: AnyObject,
         action: Selector
     ) {
+        actionButton = NSButton(title: buttonTitle, target: target, action: action)
         super.init(frame: .zero)
         boxType = .custom
-        fillColor = NSColor.windowBackgroundColor.withAlphaComponent(0.94)
-        borderColor = NSColor.separatorColor.withAlphaComponent(0.65)
         borderWidth = 1
         cornerRadius = 16
         contentViewMargins = NSSize(width: 20, height: 18)
@@ -113,13 +116,11 @@ private final class ToolCardView: NSBox {
             icon.heightAnchor.constraint(equalToConstant: 34)
         ])
 
-        let titleLabel = NSTextField(labelWithString: title)
+        titleLabel.stringValue = title
         titleLabel.font = NSFont.systemFont(ofSize: 17, weight: .semibold)
-        titleLabel.textColor = .labelColor
 
-        let descriptionLabel = NSTextField(wrappingLabelWithString: description)
+        descriptionLabel.stringValue = description
         descriptionLabel.font = NSFont.systemFont(ofSize: 13)
-        descriptionLabel.textColor = .secondaryLabelColor
         descriptionLabel.maximumNumberOfLines = 3
 
         let textStack = NSStackView(views: [titleLabel, descriptionLabel])
@@ -132,12 +133,11 @@ private final class ToolCardView: NSBox {
         topStack.alignment = .top
         topStack.spacing = 12
 
-        let button = NSButton(title: buttonTitle, target: target, action: action)
-        button.bezelStyle = .rounded
-        button.controlSize = .large
-        button.keyEquivalent = ""
+        actionButton.bezelStyle = .rounded
+        actionButton.controlSize = .large
+        actionButton.keyEquivalent = ""
 
-        let stack = NSStackView(views: [topStack, button])
+        let stack = NSStackView(views: [topStack, actionButton])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.distribution = .fill
@@ -153,6 +153,37 @@ private final class ToolCardView: NSBox {
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             heightAnchor.constraint(greaterThanOrEqualToConstant: 156)
         ])
+
+        updateAppearanceColors()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateAppearanceColors()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        updateAppearanceColors()
+    }
+
+    private func updateAppearanceColors() {
+        // NSBox 会缓存设置时已解析的颜色，外观切换后需要重新解析语义颜色。
+        let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        fillColor = isDark
+            ? NSColor(calibratedWhite: 0.16, alpha: 0.96)
+            : NSColor(calibratedWhite: 0.98, alpha: 0.96)
+        borderColor = isDark
+            ? NSColor(calibratedWhite: 0.38, alpha: 0.65)
+            : NSColor(calibratedWhite: 0.72, alpha: 0.65)
+        titleLabel.textColor = isDark
+            ? NSColor(calibratedWhite: 0.96, alpha: 1)
+            : NSColor(calibratedWhite: 0.10, alpha: 1)
+        descriptionLabel.textColor = isDark
+            ? NSColor(calibratedWhite: 0.72, alpha: 1)
+            : NSColor(calibratedWhite: 0.38, alpha: 1)
+        actionButton.contentTintColor = isDark ? .white : .controlTextColor
+        needsDisplay = true
     }
 
     @available(*, unavailable)
